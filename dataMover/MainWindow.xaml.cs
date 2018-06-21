@@ -41,36 +41,53 @@ namespace dataMover
             StringBuilder sb = new StringBuilder();
             foreach (string path in listFolder.Items)
             {
-                try
+                if (Directory.Exists(path))
                 {
-                    DirectoryInfo folder = new DirectoryInfo(path.ToString());
-                    FileSystemInfo[] files = folder.GetFileSystemInfos();
-                    foreach (var file in files)
+                    DirectoryInfo folder = new DirectoryInfo(path);
+                    FileInfo[] files = folder.GetFiles();
+                    foreach (FileInfo file in files)
                     {
-                        int i = file.FullName.Length - 1;
-                        for (; i >= 0; i--)
+                        string newPath = folder.Parent.FullName + "\\" + file.Name;
+                        if (!File.Exists(newPath))
                         {
-                            if (file.FullName[i] == '\\')
+                            file.MoveTo(newPath);
+                        }
+                        else
+                        {
+                            newPath = folder.Parent.FullName + "\\" + System.IO.Path.GetFileNameWithoutExtension(file.Name);
+                            for (int i = 1; ; i++)
                             {
-                                i--;
-                                for (; i >= 0; i--)
-                                { if (file.FullName[i] == '\\') { break; } }
-                                break;
+                                string newPathTemp = string.Format("{0} ({1}){2}", newPath, i, file.Extension);
+                                if (!File.Exists(newPathTemp))
+                                {
+                                    file.MoveTo(newPathTemp);
+                                    break;
+                                }
                             }
                         }
-                        //string temp = file.FullName.Substring(0, i + 1) + file.Name;
-                        try
+                    }
+                    DirectoryInfo[] directoryies = folder.GetDirectories();
+                    foreach (DirectoryInfo directory in directoryies)
+                    {
+                        string newPath = folder.Parent.FullName + "\\" + directory.Name;
+                        if (!Directory.Exists(newPath))
                         {
-                            Directory.Move(file.FullName, file.FullName.Substring(0, i + 1) + file.Name);
+                            directory.MoveTo(newPath);
                         }
-                        catch(Exception ex)
+                        else
                         {
-                            if (ex is System.IO.PathTooLongException)
-                                sb.AppendLine(file.Name + "發生例外:" + ex);
+                            for (int i = 1; ; i++)
+                            {
+                                string newPathTemp = string.Format("{0} ({1})", newPath, i);
+                                if (!Directory.Exists(newPathTemp))
+                                {
+                                    directory.MoveTo(newPathTemp);
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
-                finally {  }
             }
             if (sb.Length > 0) { MessageBox.Show(sb.ToString()); }
         }
